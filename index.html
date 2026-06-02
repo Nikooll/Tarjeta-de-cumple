@@ -1,1 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feliz Cumpleaños mi Panelita 🌷</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    min-height:100vh;
+    background:linear-gradient(135deg,#1a0a2e 0%,#2d1155 50%,#1a0a2e 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Georgia',serif; overflow-x:hidden;
+  }
+  .stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+  .star { position:absolute; background:#fff; border-radius:50%; animation:twinkle 3s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.4)} }
 
+  #scene {
+    position:relative; z-index:10;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    width:100vw; min-height:100vh; padding:2rem 1rem;
+  }
+
+  /* ── Sobre ── */
+  #envelope-wrap {
+    cursor:pointer; display:flex; flex-direction:column;
+    align-items:center; gap:1.2rem;
+    animation:float 3s ease-in-out infinite;
+  }
+  #envelope-wrap:hover { animation:none; transform:scale(1.04); }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  .envelope-svg { filter:drop-shadow(0 8px 30px rgba(255,100,200,.45)); }
+  .tap-hint { color:rgba(255,220,240,.75); font-size:1rem; letter-spacing:.12em; text-transform:uppercase; animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+  /* ── Jardín ── */
+  #garden { display:none; flex-direction:column; align-items:center; width:100%; max-width:680px; }
+  .tulip-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 6px; padding:.5rem; }
+
+  .tulip-slot {
+    opacity:0; transform:translateY(40px) scale(.7);
+    transition:opacity .5s ease, transform .5s cubic-bezier(.34,1.56,.64,1);
+    cursor:default; position:relative;
+  }
+  .tulip-slot.visible { opacity:1; transform:translateY(0) scale(1); }
+  .tulip-slot.clickable { cursor:pointer; }
+  .tulip-slot.clickable:hover svg { transform:scale(1.12); transition:transform .2s; }
+
+  .tulip-slot.last { filter:drop-shadow(0 0 14px rgba(255,180,255,.9)); }
+  .tulip-slot.last svg { animation:glow 1.8s ease-in-out infinite; }
+  @keyframes glow { 0%,100%{filter:drop-shadow(0 0 6px rgba(255,150,230,.7))} 50%{filter:drop-shadow(0 0 20px rgba(255,100,220,1))} }
+
+  /* hint badge en tulipanes desbloqueados */
+  .tulip-slot.clickable::after {
+    content:'✦';
+    position:absolute; top:-4px; right:-2px;
+    font-size:.65rem; color:#ffccf0;
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .tulip-slot.opened::after { display:none; }
+
+  #counter { color:rgba(255,200,240,.6); font-size:.9rem; margin-top:.5rem; letter-spacing:.08em; min-height:1.2em; }
+
+  /* ── Mensaje final (último tulipán) ── */
+  #final-msg {
+    display:none; flex-direction:column; align-items:center;
+    text-align:center; padding:0 1rem;
+    animation:msgIn .9s cubic-bezier(.34,1.4,.64,1) both;
+  }
+  @keyframes msgIn { from{opacity:0;transform:scale(.5) translateY(40px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .msg-heart { font-size:3.5rem; margin-bottom:.5rem; animation:heartbeat 1.2s ease-in-out infinite; }
+  @keyframes heartbeat { 0%,100%{transform:scale(1)} 14%{transform:scale(1.25)} 28%{transform:scale(1)} 42%{transform:scale(1.15)} 70%{transform:scale(1)} }
+  .msg-title { font-size:clamp(1.8rem,6vw,3rem); font-weight:bold; background:linear-gradient(135deg,#ffb3e6,#ff6ec7,#c56bff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1.2; margin-bottom:.4rem; }
+  .msg-sub { font-size:clamp(1rem,3vw,1.5rem); color:rgba(255,220,245,.9); font-style:italic; }
+  .confetti-line { font-size:1.6rem; margin-top:.7rem; letter-spacing:.2rem; }
+  .back-btn { margin-top:1.4rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,180,240,.4); color:rgba(255,200,245,.9); padding:.55rem 1.4rem; border-radius:2rem; cursor:pointer; font-size:.95rem; font-family:'Georgia',serif; transition:background .2s; }
+  .back-btn:hover { background:rgba(255,255,255,.16); }
+
+  /* ── Modal de frase (tulipanes 1-20) ── */
+  #modal-overlay {
+    display:none; position:fixed; inset:0; z-index:100;
+    background:rgba(15,5,35,.82); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; padding:1.5rem;
+  }
+  #modal-overlay.open { display:flex; }
+  #modal-box {
+    background:linear-gradient(160deg,#2d1155,#1a0a2e);
+    border:1px solid rgba(200,120,255,.45);
+    border-radius:1.4rem; padding:2rem 1.8rem;
+    max-width:360px; width:100%; text-align:center;
+    animation:msgIn .5s cubic-bezier(.34,1.4,.64,1) both;
+    position:relative;
+  }
+  .modal-tulip { font-size:2.4rem; margin-bottom:.6rem; }
+  .modal-num { font-size:.8rem; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,180,240,.5); margin-bottom:.5rem; }
+  .modal-phrase { font-size:1.18rem; color:rgba(255,220,245,.95); line-height:1.6; font-style:italic; }
+  .modal-close { margin-top:1.4rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,180,240,.35); color:rgba(255,200,245,.9); padding:.5rem 1.3rem; border-radius:2rem; cursor:pointer; font-size:.9rem; font-family:'Georgia',serif; transition:background .2s; }
+  .modal-close:hover { background:rgba(255,255,255,.18); }
+
+  /* pétalos flotantes */
+  .petal { position:fixed; pointer-events:none; animation:petalFall linear infinite; z-index:5; }
+  @keyframes petalFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div id="scene">
+
+  <!-- SOBRE -->
+  <div id="envelope-wrap" onclick="openEnvelope()">
+    <svg class="envelope-svg" width="220" height="160" viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="envGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#b04fd4"/>
+          <stop offset="100%" style="stop-color:#7c3aed"/>
+        </linearGradient>
+        <linearGradient id="flapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#d57eff"/>
+          <stop offset="100%" style="stop-color:#9b3ec8"/>
+        </linearGradient>
+      </defs>
+      <rect x="2" y="30" width="216" height="128" rx="10" fill="url(#envGrad)" stroke="#e0a0ff" stroke-width="1.5"/>
+      <line x1="2" y1="158" x2="110" y2="90" stroke="#c77dff" stroke-width="1" opacity=".5"/>
+      <line x1="218" y1="158" x2="110" y2="90" stroke="#c77dff" stroke-width="1" opacity=".5"/>
+      <path d="M2 30 L110 95 L218 30 Z" fill="url(#flapGrad)" stroke="#e0a0ff" stroke-width="1.5"/>
+      <text x="110" y="132" text-anchor="middle" font-size="34">💌</text>
+    </svg>
+    <div class="tap-hint">✦ Toca para abrir ✦</div>
+  </div>
+
+  <!-- JARDÍN -->
+  <div id="garden">
+    <div class="tulip-grid" id="tulip-grid"></div>
+    <div id="counter"></div>
+  </div>
+
+  <!-- MENSAJE FINAL (tulipán 21) -->
+  <div id="final-msg">
+    <div class="msg-heart">❤️</div>
+    <div class="msg-title">Te quiero un montónnn</div>
+    <div class="msg-sub">Feliz Cumpleaños 21 🌷</div>
+    <div class="confetti-line">🎉 🌸 🎂 🌸 🎉</div>
+    <button class="back-btn" onclick="backToGarden()">🌷 Volver al jardín</button>
+  </div>
+
+</div>
+
+<!-- MODAL frases -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal-box">
+    <div class="modal-tulip" id="modal-emoji">🌷</div>
+    <div class="modal-num" id="modal-num">Tulipán 1</div>
+    <div class="modal-phrase" id="modal-phrase"></div>
+    <button class="modal-close" onclick="closeModal()">Cerrar ✦</button>
+  </div>
+</div>
+
+<script>
+/* ── Estrellas ── */
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<90;i++){
+    const s=document.createElement('div'); s.className='star';
+    const sz=Math.random()*2.5+.5;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation-delay:${Math.random()*4}s;animation-duration:${2+Math.random()*3}s`;
+    c.appendChild(s);
+  }
+})();
+
+/* ── Frases para los 20 tulipanes ── */
+const FRASES = [
+  "Eres una de mis personas favoritas en este mundo. ☀️",
+  "Gracias x esa risa escandolosa q nos alegra a todos jajs. 🎶",
+  "Gracias por estar en los momentos buenos y también en los difíciles.. 💫",
+  "Nunca cambies tu forma tan liND de ser.. 🌸",
+  "Gracias x todas las locuras compartidas. ✨",
+  "Gracias por cada chisme, cada risa y cada momento inolvidable. 💖",
+  "Feliz cumpleaños, viejita, oficialmente estás más cerca de los 30 que de los 10 jajs. 😂",
+  "Gracias por existir y por darme material para reírme todos los días. 🪄",
+  "Si algún día nos meten presas, espero que nos toque la misma celda. 😌",
+  "Tú pones las malas ideas y yo digo "vamos". 😎",
+  "Prometo seguir molestándote por muchos años más. ❤️",
+  "Gracias por escuchar mis dramas como si fueran capítulos de una novela. 🌟",
+  "Te deseo mucho dinero... porque la felicidad ya la tienes al conocerme. 😌✨",
+  "Eres exactamente la persona que este mundo necesitaba. 🕊️",
+  "Mereces todo lo bueno que la vida tiene para darte. 🎁",
+  "Tu historia apenas empieza y ya es la más bonita. 📖",
+  "Feliz cumpleaños, amiga. Gracias por las risas, los chismes y por ser tú. ❤️",
+  "Hoy y siempre, quiero que sepas que te quiero muchooo. 💕",
+  "21 años de todo lo que eres: pura maravilla. 🌺",
+  "solo quería recordarte algo importante: eres una persona increíble y te quiero muchísimo, aunque te moleste por joderte jsja. Feliz cumple, viejita hermosa. ❤️🎂.",
+];
+
+/* ── Colores tulipanes ── */
+const COLORS=[
+  ['#ff6b9d','#ff3d7f','#c0166a'],
+  ['#ff9de2','#ff6ec7','#d44ba0'],
+  ['#ffd1f0','#ffaadf','#e07ab8'],
+  ['#ff5fa0','#ff1a6e','#b8005a'],
+  ['#ffb3e6','#ff85d4','#cc55b0'],
+  ['#e89eff','#cc55ff','#9900cc'],
+  ['#ffcaeb','#ff99d9','#dd55aa'],
+];
+
+function tulipSVG(ci, big){
+  const [l,m,d]=COLORS[ci%COLORS.length];
+  const w=big?66:50, h=big?86:68, x=w/2;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <path d="M${x} ${h} Q${x-4} ${h*.65} ${x} ${h*.48}" fill="none" stroke="#4caf50" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M${x-1} ${h*.72} Q${x-13} ${h*.6} ${x-9} ${h*.52} Q${x-4} ${h*.65} ${x-1} ${h*.72}" fill="#66bb6a"/>
+    <ellipse cx="${x-6}" cy="${h*.3}" rx="6.5" ry="10.5" fill="${l}" transform="rotate(-18,${x-6},${h*.3})"/>
+    <ellipse cx="${x+6}" cy="${h*.3}" rx="6.5" ry="10.5" fill="${l}" transform="rotate(18,${x+6},${h*.3})"/>
+    <ellipse cx="${x-4}" cy="${h*.26}" rx="6" ry="11.5" fill="${m}" transform="rotate(-9,${x-4},${h*.26})"/>
+    <ellipse cx="${x+4}" cy="${h*.26}" rx="6" ry="11.5" fill="${m}" transform="rotate(9,${x+4},${h*.26})"/>
+    <ellipse cx="${x}" cy="${h*.24}" rx="5.5" ry="12.5" fill="${d}"/>
+    <ellipse cx="${x-1}" cy="${h*.15}" rx="2" ry="4" fill="rgba(255,255,255,.35)"/>
+  </svg>`;
+}
+
+let tulipCount=0, allRevealed=false, finalShown=false;
+
+function openEnvelope(){
+  document.getElementById('envelope-wrap').style.display='none';
+  const garden=document.getElementById('garden');
+  garden.style.display='flex';
+  const grid=document.getElementById('tulip-grid');
+  for(let i=0;i<21;i++){
+    const slot=document.createElement('div');
+    slot.className='tulip-slot'+(i===20?' last':'');
+    slot.dataset.index=i;
+    slot.innerHTML=tulipSVG(i, i===20);
+    slot.onclick=()=>onTulipClick(i);
+    grid.appendChild(slot);
+  }
+  revealNext();
+}
+
+function revealNext(){
+  if(tulipCount>=21) return;
+  const slots=document.querySelectorAll('.tulip-slot');
+  slots[tulipCount].classList.add('visible');
+  tulipCount++;
+  const counter=document.getElementById('counter');
+  if(tulipCount<21){
+    counter.textContent=`Tulipán ${tulipCount} de 21 🌷`;
+    setTimeout(revealNext,400);
+  } else {
+    counter.textContent='¡Toca el último tulipán! ✨';
+    allRevealed=true;
+    // Hacer clickables los 20 primeros también
+    slots.forEach((s,i)=>{ if(i<20) s.classList.add('clickable'); });
+    // El 21 ya era clickable implícitamente
+    slots[20].classList.add('clickable');
+  }
+}
+
+function onTulipClick(idx){
+  if(!allRevealed) return;
+  if(idx===20){
+    showFinal();
+  } else {
+    showPhrase(idx);
+  }
+}
+
+function showPhrase(idx){
+  document.getElementById('modal-num').textContent=`Tulipán ${idx+1} de 21`;
+  document.getElementById('modal-phrase').textContent=FRASES[idx];
+  // emoji variado por índice
+  const emojis=['🌷','🌸','💐','🌺','🌹','🌼','🌻','🌷','💕','✨','🦋','🌟','💖','🎀','🍃','🌙','🎶','🫧','🩷','🌈'];
+  document.getElementById('modal-emoji').textContent=emojis[idx];
+  // marcar como abierto
+  const slot=document.querySelectorAll('.tulip-slot')[idx];
+  slot.classList.add('opened');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e){
+  if(e && e.target!==document.getElementById('modal-overlay') && e.target.tagName!=='BUTTON') return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function showFinal(){
+  document.getElementById('garden').style.display='none';
+  const msg=document.getElementById('final-msg');
+  msg.style.display='flex';
+  finalShown=true;
+  spawnPetals();
+}
+
+function backToGarden(){
+  document.getElementById('final-msg').style.display='none';
+  const garden=document.getElementById('garden');
+  garden.style.display='flex';
+  document.getElementById('counter').textContent='🌷 Toca cada tulipán para leer su mensaje';
+}
+
+function spawnPetals(){
+  const em=['🌸','🌷','✨','💕','🎉','🌺','💖'];
+  for(let i=0;i<22;i++) setTimeout(()=>addPetal(em),i*180);
+  setInterval(()=>addPetal(em),550);
+}
+function addPetal(em){
+  const p=document.createElement('div'); p.className='petal';
+  p.textContent=em[Math.floor(Math.random()*em.length)];
+  p.style.cssText=`left:${Math.random()*100}%;animation-duration:${3+Math.random()*4}s;font-size:${.9+Math.random()*1.1}rem`;
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),8000);
+}
+</script>
+</body>
+</html>
